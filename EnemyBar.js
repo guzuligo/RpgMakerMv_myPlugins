@@ -34,6 +34,7 @@
  */
 
 (function(){
+    var DEBUG_=true;
     var _ = PluginManager.parameters('EnemyBar');
     var c=_["bar colors"];
     //console.log("C",c);
@@ -45,7 +46,7 @@
         "#"+(c["mp color1"]||0),
         "#"+(c["mp color2"]||0)
     ]
-    console.log(c);
+    if(DEBUG_)console.log(c);
     //console.log("Done C")
     var alias_WBD=Window_BattleEnemy.prototype.drawItem;
     Window_BattleEnemy.prototype.drawItem = function(index) {

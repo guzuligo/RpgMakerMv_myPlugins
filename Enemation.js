@@ -48,10 +48,14 @@
  * Emaple 5: Negative number for stepping back
  * <enemation:*:[100,"Orc","Slime","Bat",-2]>
  *    
-*
+ * 
+ * Emaple 6:You can also delay using 0
+ * <enemation:*:["Orc",0,0,"Slime","Bat"]>
+ * 
  */
 
 (function(){
+    var DEBUG_=true;
     //#region initialize
     var _ = PluginManager.parameters('Enemation');
 
@@ -62,7 +66,7 @@
         waitFrames:Number(_["default wait frames"]),
     };
     _fix_cfg();
-    console.log(cfg)
+    if(DEBUG_)console.log(cfg)
 
 
     //console.log(cfg.root)
@@ -79,6 +83,10 @@
                 //var a=aes[enm.step];
                 this.startMove.apply(this,aes)
                 return false;
+            }else if (typeof(aes)=='string'){
+                //TODO: use strings as commands.
+                //Note that incoming strings will start with *
+                return false;
             }else{
             //case bitmap
                 //console.log("load bitmap",a[enm.step],enm.step)
@@ -87,9 +95,10 @@
             }
         }else{
             //case number positive, it is a delay update
-            if (a[enm.step]>=0)
+            if (a[enm.step]>0)
                 this.enemation.delayMax=Number(a[enm.step]);
             else{
+                if (a[enm.step]==0) return true;//stop processing on 0
             //negative to step back
                 enm.step+=a[enm.step]-1;
                 if (enm.step<-1)a[enm.step]=-1;
@@ -163,7 +172,7 @@
         };
 
 
-        window["ff"]=this
+        if(DEBUG_)window["ff"]=this
         var _meta=
             this.enemation.config.meta=
                 $dataEnemies[this._battler.enemyId()].meta;
@@ -217,7 +226,7 @@
         result=[];
         for (var i=0;i<a.length;i++){
             if (isNaN(a[i])){
-                if(typeof(a[i])=='string')
+                if(typeof(a[i])=='string' && a[i].charAt(0)!="*")
                     a[i]=ImageManager.loadBitmap(cfg.root,a[i],hue||0);
             }
             else
@@ -228,7 +237,7 @@
     }
 
     //for debug:
-    window._prepareAnimationFiles=_prepareAnimationFiles; 
+    if(DEBUG_)window._prepareAnimationFiles=_prepareAnimationFiles; 
 
     //Fix config issues
     function _fix_cfg(){
@@ -252,7 +261,7 @@
         J.replace(/(['"])?([a-zA-Z0-9_\*]+)(['"])?:([^\/])/g, '"$2":$4')
         );
     }
-    window.toJson=toJson;
+    if(DEBUG_)window.toJson=toJson;
     function getNotes(enemySprite,htmlTag="enemation"){
         try{
         var n=$dataEnemies[enemySprite._battler._enemyId].note

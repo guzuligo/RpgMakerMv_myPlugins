@@ -12,11 +12,11 @@
  * @desk assign a shake effect to animation. Specify the animation ID, frame number and shake power
  * 
  * @help
- * Version Date 20OCT2028
+ * Version Date 20OCT2030
  * EFFECT 1 
  * To make a skill hide battler when being executed,
  *  write following in skill notes:
- *      <hideBattler:true>
+ *      <hideBattler>
  * 
  * EFFECT 2
  * To modify the shake effect to move Y as well,
@@ -25,6 +25,8 @@
  * EFFECT 3
  * To make an animation shake the screen,
  *  see the shake parameter on the right
+ * 
+ * 
  * 
  */
 
@@ -91,13 +93,46 @@
         window.f=this;
         //console.log(this.currentFrameIndex())
         var s=$dataAnimations[this._animation.id].shakeAt;
-        if (s 
-            && this._prevFrame_!= this.currentFrameIndex()
-            && s[this.currentFrameIndex()]){
-                s=s[this.currentFrameIndex()];
-                console.log("SHADE",$gameScreen.startShake,s);
-                $gameScreen.startShake(s[0],s[1],s[2]);
+        if (this.currentFrameIndex()==0){
+            if (this._prevFrame_==0 && unhide)
+                _sprite(unhide)._hiding=true;
+            if (tozoom)
+                $gameScreen.startZoom(this.x+Number(tozoom[0]),
+            this.y+Number(tozoom[1]),
+            Number(tozoom[2]),
+            Number(tozoom[3]),
+            )
         }
+
+        if (this._duration==1){
+            if(unhide){
+                _sprite(unhide)._hiding=false
+                unhide=null;
+            }
+
+            if (tozoom){
+                if (tozoom)
+                $gameScreen.startZoom(this.x+Number(tozoom[0]),
+                    this.y+Number(tozoom[1]),
+                    1,
+                    Number(tozoom[3]),
+                    );
+            }
+
+        }
+
+
+
+        if (this._prevFrame_!= this.currentFrameIndex()){
+            //Shake effect
+            if (s && s[this.currentFrameIndex()]){
+                    s=s[this.currentFrameIndex()];
+                    //console.log("SHADE",$gameScreen.startShake,s);
+                    $gameScreen.startShake(s[0],s[1],s[2]);
+            }
+            
+        }
+
         this._prevFrame_=this.currentFrameIndex();
         
     }
@@ -105,16 +140,23 @@
 
     //#region Allow Hiding Battler
     //ensure battler knows its sprite
-    Game_Battler.prototype._sprite=null;
+    var _sprites={};//all actors, {_actorId:sprite}
+    function _sprite(actor){
+        return _sprites[actor._actorId];
+    }
+
+    
     var SB_setBattler=Sprite_Battler.prototype.setBattler;
+    
     Sprite_Battler.prototype.setBattler = function(battler) {
         //console.log("set battler:",battler)
         SB_setBattler.apply(this,arguments);
-        if (battler)battler._sprite_=this;
+        if (battler)_sprites[battler._actorId]=this;
     }
 
     var BM_startAction=BattleManager.startAction;
     var unhide=null;
+    var tozoom=null;
     BattleManager.startAction=function(){
         BM_startAction.apply(this);
         var subject = this._subject;
@@ -123,13 +165,10 @@
         var meta=$dataSkills[action._item._itemId].meta;
         //console.log( subject,action,targets);
         
-        if (meta.hideBattler && meta.hideBattler.toLocaleLowerCase()=='true' && !subject._sprite_._hiding){
-            console.log(subject);
+        if (meta.hideBattler && !_sprite(subject)._hiding)
             unhide=subject;
-            unhide._sprite_._hiding=true;
-            window.me=window.me||[];window.me.push(subject);
-           
-        }
+
+        tozoom=!meta.zoom?null:meta.zoom.split(",");
 
     }
 
@@ -137,9 +176,9 @@
     BattleManager.endAction=function(){
         BM_endAction.apply(this);
         //console.log(unhide)
-        if (unhide)
-            unhide._sprite_._hiding=!true;
-        unhide=null;
+        //if (unhide)
+        //    unhide._sprite_._hiding=!true;
+        //unhide=null;
     }
 
     //#endregion Allow Hiding Battler

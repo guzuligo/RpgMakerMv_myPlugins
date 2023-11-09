@@ -12,7 +12,7 @@
  * @desk assign a shake effect to animation. Specify the animation ID, frame number and shake power
  * 
  * @help
- * Version Date 20OCT2030
+ * Version 1.231105
  * EFFECT 1 
  * To make a skill hide battler when being executed,
  *  write following in skill notes:
@@ -26,6 +26,10 @@
  * To make an animation shake the screen,
  *  see the shake parameter on the right
  * 
+ * EFFECT 4
+ * Zooming can be achieved by adding following to skill note
+ * <zoom:0,0,2,10>
+ * Parameters are <zoom: target x offset, target y offset, scale, duration,activation frame#>
  * 
  * 
  */
@@ -49,6 +53,11 @@
  * @param duration
  * @type Number
  * @default 20
+ * 
+ * @param debug level
+ * @type Number
+ * @default 0
+ * 
  * }
  */ 
 
@@ -58,6 +67,7 @@
 
     
     var _ = PluginManager.parameters('guzu_AnimationsExtraEffects');
+    var debug_level=_["debug level"];
     //Put the shake in the animation data
     _onload=DataManager.onLoad;
     DataManager.onLoad=function(){
@@ -96,13 +106,14 @@
         if (this.currentFrameIndex()==0){
             if (this._prevFrame_==0 && unhide)
                 _sprite(unhide)._hiding=true;
-            if (tozoom)
-                $gameScreen.startZoom(this.x+Number(tozoom[0]),
-            this.y+Number(tozoom[1]),
-            Number(tozoom[2]),
-            Number(tozoom[3]),
-            )
         }
+        if (tozoom && this.currentFrameIndex()==(tozoom[4]||0))
+            $gameScreen.startZoom(this.x+Number(tozoom[0]||0),
+                this.y+Number(tozoom[1]||0),
+                Number(tozoom[2]||1.5),
+                Number(tozoom[3]||3),
+            );
+        
 
         if (this._duration==1){
             if(unhide){
@@ -112,10 +123,10 @@
 
             if (tozoom){
                 if (tozoom)
-                $gameScreen.startZoom(this.x+Number(tozoom[0]),
-                    this.y+Number(tozoom[1]),
+                $gameScreen.startZoom(this.x+Number(tozoom[0]||0),
+                    this.y+Number(tozoom[1]||0),
                     1,
-                    Number(tozoom[3]),
+                    Number(tozoom[3]||3),
                     );
             }
 
@@ -161,7 +172,13 @@
         BM_startAction.apply(this);
         var subject = this._subject;
         var action = subject.currentAction();
-        var targets = action.makeTargets();
+        //var targets = action.makeTargets();
+        if (!action){
+            if (debug_level>1)
+                console.warn("Effects failed. No current action available on",subject)
+            return;//failed
+        }
+
         var meta=$dataSkills[action._item._itemId].meta;
         //console.log( subject,action,targets);
         

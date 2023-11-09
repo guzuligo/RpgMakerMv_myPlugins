@@ -9,11 +9,6 @@
  * @help
  * Version Date 20OCT2028
  * 
- * GUARD EDIT
- * In the Actor note, write:
- * <guard:a:100,ax:1,b:2>
- * This will subtract 100*guard*ax from attack, then devide 2*guard from the remaining
- * 
  * FAST FORWARD EDIT
  * In the plugin menu, you can find the fastfarward speed when you press SHIFT during battle
  * 
@@ -24,36 +19,7 @@
 
     //#region mods
     //$dataActors[a._actorId].meta
-    var GA_applyGuard=Game_Action.prototype.applyGuard;
-    Game_Action.prototype.applyGuard = function(damage, target) {
-        
-        if(target._actorId!=undefined) try{
-            
-            var meta=$dataActors[target._actorId].meta;
-            var guard=meta.guard;
-            if (!guard )
-                return GA_applyGuard.apply(this,arguments);
-            
-            guard=toJson(guard);
-            var result=damage;
-            if (target.isGuard()){
-                result-=(Number(guard.a)|0)*((Number(guard.ax)|1)*target.grd)
-                var div=(Number(guard.b)|1)*target.grd;
-                console.log((Number(guard.a)|0),((Number(guard.ax)|1),target.grd),div)
-                if (div<=0)div=1;
-                result/=div;
-                if (result<0)
-                result=0;
-            }
-            
-            window.aaa=[result,guard]
-            return result;//GA_applyGuard.apply(this,arguments);
-        }
-        catch(XX){
-            console.error(XX);
-        }
-        return GA_applyGuard.apply(this,arguments);
-    };
+    
 
 
 
@@ -99,16 +65,5 @@
         
     }
 
-    function toJson(J){
-        
-        J=J.trim();
-        if (J[0]!="{")
-            J="{"+J;
-        if (J[J.length-1]!="}")
-            J=J+"}";
-        //source: https://stackoverflow.com/a/24175850/8060624
-        return JSON.parse(
-        J.replace(/(['"])?([a-zA-Z0-9_\*]+)(['"])?:([^\/])/g, '"$2":$4')
-        );
-    }
+    
 })()

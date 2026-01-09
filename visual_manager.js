@@ -1,5 +1,5 @@
 /*
-version: 0.0.01
+version: 0.0.02
 About:
 This tool will create a scene and control the graphics based on a state variable that can be saved and restored.
 How this tool manages graphics:
@@ -13,8 +13,9 @@ How this tool manages graphics:
             "image":"path/image",
             x:0,y:0,
             frame:[x,y,width,height],// this will be used to crop the image
-            scale:1,
+            scale:{x:1,y:1},
             opacity:1,
+
 
         },
         the next state object
@@ -35,12 +36,13 @@ visual_manager.setup=function(_state){
     visual_manager.tempState=_state;
 }
 visual_manager.tempState=null;
-
+visual_manager.prototype.childrenDict=null;
 
 visual_manager.prototype.initialize = function() {
     Scene_Base.prototype.initialize.call(this); // Call the superclass's initialize method
     this._state = visual_manager.tempState;
     this._save = null;
+    this.childrenDict={};
     visual_manager.tempState=null;
     
 }
@@ -55,11 +57,48 @@ visual_manager.prototype.destroy = function() {
 }
 
 
-
-visual_manager.prototype.edit=function(id){
+//Lightweight edit function to update sprite properties
+visual_manager.prototype.edit=function(id,data){
+    //Update sprite and state properties based on data object
+    if (data){
+        //update state
+        var sprite = this.getSpriteById(id);
+        if (sprite != null)
+            for (var key in data){
+                switch (key){
+                    case "path":
+                        if (this._state[id][key]!=data[key]){
+                            //remove and re-add
+                            console.log("PP",this);
+                            this.removeSpriteById(id);
+                            this._state[id][key]=data[key];
+                            this._addSpriteToLayer(id);
+                        }
+                        break;
+                    case "image":
+                        this._state[id][key]=data[key];
+                        sprite.bitmap=(ImageManager.loadBitmap(this._state[id][key][0],this._state[id][key][1]));
+                        break;
+                    case "frame":
+                        this._state[id][key]=data[key];
+                        sprite.setFrame(this._state[id][key][0],this._state[id][key][1],this._state[id][key][2],this._state[id][key][3]);
+                        break;
+                    case "scale":
+                        this._state[id][key]=data[key];
+                        if (this._state[id][key].x!=null) sprite.scale.x=this._state[id][key].x;
+                        if (this._state[id][key].y!=null) sprite.scale.y=this._state[id][key].y;
+                        break;
+                    
+                    default:
+                        this._state[id][key]=data[key];
+                        sprite[key]=this._state[id][key];
+                }
+            }
+    }
     return this._state[id];
 }
 
+//Refresh either all sprites or a specific sprite by ID (Heavyweight refresh to ensure all properties are applied)
 visual_manager.prototype.refresh=function(id){
     if (id==null){
         console.log("Refreshing all,",this._state)
@@ -88,54 +127,91 @@ visual_manager.prototype.restoreState=function(_save){
     this._state = JSON.parse(JSON.stringify(_save || this._save || visual_manager.tempState));
 }
 
+visual_manager.prototype._addSpriteToLayer=function(id){
+    
+    //TODO: ensure correct layer z depth
+    console.log("Adding sprite as layer:",this._state[id].path);
+    var layerpath=this._state[id].path.split("/");
+    var currentLayer=this;
+    for (i in layerpath){
+        //ensure layer exists
+        if (currentLayer.childrenDict[layerpath[i]]==null){
+            var newLayer=new Sprite_Base();
+            newLayer.name=layerpath[i];
+            newLayer.childrenDict={};
+            currentLayer.childrenDict[layerpath[i]]=newLayer;
+            currentLayer.addChild(newLayer);
+        }
+        //refer to next layer
+        currentLayer=currentLayer.childrenDict[layerpath[i]];
+    }
+    return currentLayer;
+}
+
 //Add the sprite in the currect layer and apply its properties
 visual_manager.prototype.addSprite=function(id){
-    var layerpath=this._state[id].path.split("/");
+    //var layerpath=this._state[id].path.split("/");
     //add layer if it doesn't exist
-    currentLayer=this;
-    for (i in layerpath){
-        console.log(layerpath[i])
-        if (currentLayer[layerpath[i]]==null){
-            currentLayer[layerpath[i]]=new Sprite();
-            currentLayer.addChild(currentLayer[layerpath[i]]);
-        }
-        currentLayer=currentLayer[layerpath[i]];
-    }
+    currentLayer=this._addSpriteToLayer(id);
     
     //format sprite
     var sprite=currentLayer//[id];
     var img=this._state[id].image;
-    sprite.bitmap=(ImageManager.loadBitmap(img[0],img[1]));//ImageManager.loadBitmap(this._state[id].image);
+
+    if (img){
+        sprite.bitmap=(ImageManager.loadBitmap(img[0],img[1]));//ImageManager.loadBitmap(this._state[id].image);
+    }
+
     if (this._state[id].frame){
         sprite.setFrame(this._state[id].frame[0],this._state[id].frame[1],this._state[id].frame[2],this._state[id].frame[3]);    
     }
-    sprite.scale.x=this._state[id].scale.x||1;
-    sprite.scale.y=this._state[id].scale.y||1;
-    sprite.opacity=this._state[id].opacity||255;
-    sprite.x=this._state[id].x||0;
-    sprite.y=this._state[id].y||0;
-    //add the sprite to scene using _state[id].id format to push in the correct layer
+
+    var _defaultState={
+        scale:{x:1,y:1},
+        opacity:255,
+        x:0,
+        y:0,
+    };
+
+    //apply properties and ensure defaults
+    for (var key in _defaultState){
+        this._state[id][key]=this._state[id][key]||_defaultState[key];
+    }
+
+    this.edit(id,this._state[id]);
+
+    //Alternative way (commented out)
+    //sprite.scale.x=this._state[id].scale.x||1;
+    //sprite.scale.y=this._state[id].scale.y||1;
+    //sprite.opacity=this._state[id].opacity||255;
+    //sprite.x=this._state[id].x||0;
+    //sprite.y=this._state[id].y||0;
+    
+    return this;
 }
 
 
 
 
-visual_manager.prototype.removeSpriteByPath=function(path){
+visual_manager.prototype.removeSpriteByPath=function(path,deleteSprite=false){
     //remove sprite
     var layerpath=path.split("/");
     var currentLayer=this;
-    var lastLayer;
-    for (var i=0;i<layerpath.length-1;i++){
-        if (currentLayer && currentLayer.hasOwnProperty(layerpath[i])) {
-            lastLayer = currentLayer;
-            currentLayer=currentLayer[layerpath[i]];
-        } else {
-            break;
-        }
+    var nextLayer=layerpath.shift();
+    while (layerpath.length>0){
+        currentLayer=currentLayer.childrenDict[nextLayer];
+        nextLayer=layerpath.shift();
+
     }
-    if (lastLayer && currentLayer) {
-        lastLayer.removeChild(currentLayer);
+    currentLayer.removeChild(currentLayer.childrenDict[nextLayer]);
+    console.log("Removing",nextLayer,"from:",currentLayer);
+    
+    if (deleteSprite){
+        delete currentLayer.childrenDict[nextLayer];
     }
+    var temp= currentLayer.childrenDict[nextLayer];
+    currentLayer.childrenDict[nextLayer]=null;
+    return temp;
 }
 
 visual_manager.prototype.removeSpriteById=function(id){
@@ -154,10 +230,10 @@ visual_manager.prototype.getSpriteById=function(id){
     var layerpath=this._state[id].path.split("/");
     var currentLayer=this;
     for (i in layerpath){
-        if (currentLayer[layerpath[i]]==null){
+        if (currentLayer.childrenDict[layerpath[i]]==null){
             return null;
         }
-        currentLayer=currentLayer[layerpath[i]];
+        currentLayer=currentLayer.childrenDict[layerpath[i]];
     }
     return currentLayer;
 }

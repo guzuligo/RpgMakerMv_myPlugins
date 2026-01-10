@@ -24,6 +24,9 @@ How this tool manages graphics:
     
     User need to call saveState before changing the scene and restoreState after going back
 
+    notes:
+    - edit function fails when changing path. Refresh is needed.
+
 */
 function visual_manager() {
     this.initialize.apply(this, arguments);

@@ -1,5 +1,5 @@
 /*
-version: 0.0.02
+version: 0.0.02b
 About:
 This tool will create a scene and control the graphics based on a state variable that can be saved and restored.
 How this tool manages graphics:
@@ -61,39 +61,48 @@ visual_manager.prototype.destroy = function() {
 visual_manager.prototype.edit=function(id,data){
     //Update sprite and state properties based on data object
     if (data){
+        console.log("Editing sprite:",id,data);
         //update state
         var sprite = this.getSpriteById(id);
-        if (sprite != null)
+        var oldPath=this._state[id]["path"];
+        if (sprite != null){
+            if (data["path"]!=null){
+                //path change requires remove and re-add
+                var key="path";
+                console.log("PP-pre",this._state[id][key],data[key]);
+                if (this._state[id][key]!=data[key]){
+                    //remove and re-add
+                    console.log("PP",this);
+                    this._state[id][key]=oldPath; //reset to old path for removal
+                    this.removeSpriteById(id);
+                    this._state[id][key]=data[key];
+                    this._addSpriteToLayer(id);
+                }
+            }
             for (var key in data){
+                this._state[id][key]=data[key];
                 switch (key){
                     case "path":
-                        if (this._state[id][key]!=data[key]){
-                            //remove and re-add
-                            console.log("PP",this);
-                            this.removeSpriteById(id);
-                            this._state[id][key]=data[key];
-                            this._addSpriteToLayer(id);
-                        }
+                        //ignore as handled above
+                        //return this._state[id];
                         break;
                     case "image":
-                        this._state[id][key]=data[key];
                         sprite.bitmap=(ImageManager.loadBitmap(this._state[id][key][0],this._state[id][key][1]));
                         break;
                     case "frame":
-                        this._state[id][key]=data[key];
                         sprite.setFrame(this._state[id][key][0],this._state[id][key][1],this._state[id][key][2],this._state[id][key][3]);
                         break;
                     case "scale":
-                        this._state[id][key]=data[key];
                         if (this._state[id][key].x!=null) sprite.scale.x=this._state[id][key].x;
                         if (this._state[id][key].y!=null) sprite.scale.y=this._state[id][key].y;
                         break;
-                    
                     default:
-                        this._state[id][key]=data[key];
                         sprite[key]=this._state[id][key];
                 }
             }
+
+            
+        }
     }
     return this._state[id];
 }
@@ -153,19 +162,8 @@ visual_manager.prototype.addSprite=function(id){
     //var layerpath=this._state[id].path.split("/");
     //add layer if it doesn't exist
     currentLayer=this._addSpriteToLayer(id);
+  
     
-    //format sprite
-    var sprite=currentLayer//[id];
-    var img=this._state[id].image;
-
-    if (img){
-        sprite.bitmap=(ImageManager.loadBitmap(img[0],img[1]));//ImageManager.loadBitmap(this._state[id].image);
-    }
-
-    if (this._state[id].frame){
-        sprite.setFrame(this._state[id].frame[0],this._state[id].frame[1],this._state[id].frame[2],this._state[id].frame[3]);    
-    }
-
     var _defaultState={
         scale:{x:1,y:1},
         opacity:255,
@@ -180,12 +178,6 @@ visual_manager.prototype.addSprite=function(id){
 
     this.edit(id,this._state[id]);
 
-    //Alternative way (commented out)
-    //sprite.scale.x=this._state[id].scale.x||1;
-    //sprite.scale.y=this._state[id].scale.y||1;
-    //sprite.opacity=this._state[id].opacity||255;
-    //sprite.x=this._state[id].x||0;
-    //sprite.y=this._state[id].y||0;
     
     return this;
 }
@@ -205,16 +197,16 @@ visual_manager.prototype.removeSpriteByPath=function(path,deleteSprite=false){
     }
     currentLayer.removeChild(currentLayer.childrenDict[nextLayer]);
     console.log("Removing",nextLayer,"from:",currentLayer);
-    
+    var temp= currentLayer.childrenDict[nextLayer];
     if (deleteSprite){
         delete currentLayer.childrenDict[nextLayer];
     }
-    var temp= currentLayer.childrenDict[nextLayer];
+    
     currentLayer.childrenDict[nextLayer]=null;
     return temp;
 }
 
-visual_manager.prototype.removeSpriteById=function(id){
+visual_manager.prototype.removeSpriteById=function(id,deleteSprite=false){
     this.removeSpriteByPath(this._state[id].path);
 }
 
@@ -244,7 +236,7 @@ window.setTimeout(function() {
     
     visual_manager.setup ( [
         {
-            "path":"layer1/1-1/player",
+            "path":"layer1/1-1/1",
             "image":["img/characters/","Actor1"],
             x:0,y:0,
             frame:[0,0,100,100],// this will be used to crop the image

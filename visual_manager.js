@@ -263,18 +263,18 @@ window.setTimeout(function() {
     //window.setTimeout(function() {
     //    SceneManager._scene.referesh();
     //},50);
-    
+    window.setTimeout(function() {
+        s=SceneManager._scene;
+        s._state.push({
+                "path":"layer1/1-1/2",
+                "image":["img/characters/","Actor1"],
+                x:0,y:100,
+                frame:[100,0,200,100],// this will be used to crop the image
+                scale:{x:1,y:1},
+                opacity:255,
+            })
+        s.refresh();
+    }, 500);
+    //
 }, 500);
 
-window.setTimeout(function() {
-    s=SceneManager._scene;
-    s._state.push({
-            "path":"layer1/1-1/2",
-            "image":["img/characters/","Actor1"],
-            x:0,y:100,
-            frame:[100,0,200,100],// this will be used to crop the image
-            scale:{x:1,y:1},
-            opacity:255,
-        })
-    s.refresh();
-}, 1000);

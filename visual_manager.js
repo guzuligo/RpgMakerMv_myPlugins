@@ -1,5 +1,5 @@
 /*
-version: 0.0.02b
+version: 0.0.02c
 About:
 This tool will create a scene and control the graphics based on a state variable that can be saved and restored.
 How this tool manages graphics:
@@ -128,6 +128,18 @@ visual_manager.prototype.refresh=function(id){
     if (this._state[id]!==null){
         this.addSprite(id);
     }
+}
+
+//tool for clearing the scene to support full refresh
+visual_manager.prototype.removeAllLayers=function(topLayer=null){
+    if (topLayer==null) topLayer=this;
+    //iterate through all layers and sublayers
+    for (var key in topLayer.childrenDict){
+        this.removeAllLayers(topLayer.childrenDict[key]);
+        topLayer.removeChild(topLayer.childrenDict[key]);
+        delete topLayer.childrenDict[key];
+    }
+    return this;
 }
 
 visual_manager.prototype.saveState=function(){

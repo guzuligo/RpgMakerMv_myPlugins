@@ -1,5 +1,5 @@
 /*
-version: 0.0.02c
+version: 0.0.03
 About:
 This tool will create a scene and control the graphics based on a state variable that can be saved and restored.
 How this tool manages graphics:
@@ -90,6 +90,13 @@ visual_manager.prototype.edit=function(id,data){
                         //return this._state[id];
                         break;
                     case "image":
+                        //fix string to array if needed
+                        var q = this._state[id][key];
+                        if (typeof q === "string") {
+                            var idx = q.lastIndexOf("/");
+                            this._state[id][key] = [q.substring(0, idx+1), q.substring(idx + 1)];
+                        }
+                        //load bitmap
                         sprite.bitmap=(ImageManager.loadBitmap(this._state[id][key][0],this._state[id][key][1]));
                         break;
                     case "frame":
@@ -277,4 +284,3 @@ window.setTimeout(function() {
     }, 500);
     //
 }, 500);
-

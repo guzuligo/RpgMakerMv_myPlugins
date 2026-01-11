@@ -1,5 +1,5 @@
 /*
-version: 0.0.03
+version: 0.0.03c
 About:
 This tool will create a scene and control the graphics based on a state variable that can be saved and restored.
 How this tool manages graphics:
@@ -8,24 +8,36 @@ How this tool manages graphics:
     Any update to the state variable will be reflected in the graphics.
 
     This is how the state variable is structured:
-        [{//first object
+        [
+         {//first object
             "path":"parent/parent/child",
             "image":"path/image",
             x:0,y:0,
             frame:[x,y,width,height],// this will be used to crop the image
             scale:{x:1,y:1},
             opacity:1,
-
-
-        },
-        the next state object
+         },
+         {}\\the next state object
         ]
+    User need to call saveState before changing the scene and restoreState after going back to a previous state.
 
-    
-    User need to call saveState before changing the scene and restoreState after going back
+
+    functions:
+    edit(id,data): Lightweight edit function to update sprite properties based on data object. Returns updated state object.
+    refresh(id): Refresh either all sprites or a specific sprite by ID (Heavyweight refresh to ensure all properties are applied)
+    saveState(): Save the current state to internal save variable. Returns saved state.
+    restoreState(_save): Restore the state from internal save variable or provided _save variable. 
+        Needs refresh to apply changes.
+        The save variable can be either provided as a variable, or if null, the internal save variable will be used.
+    setup(_state): Static function to setup the initial state variable before creating the scene.
+
 
     notes:
     - edit function fails when changing path. Refresh is needed.
+
+    //protips:
+    - following sprite properties can be used in the state object:
+        x,y,scale,opacity,rotation,blendMode,anchor,frame,image,z
 
 */
 function visual_manager() {
@@ -107,7 +119,16 @@ visual_manager.prototype.edit=function(id,data){
                         if (this._state[id][key].y!=null) sprite.scale.y=this._state[id][key].y;
                         break;
                     default:
-                        sprite[key]=this._state[id][key];
+                        var value=this._state[id][key];
+                        if (typeof value==="number" || typeof value==="string" || typeof value==="boolean"){
+                            sprite[key]=value;
+                        }else{
+                            //iterate through object properties
+                            for (var subkey in value){
+                                sprite[key][subkey]=value[subkey];
+                            }
+                        }
+                        //sprite[key]=this._state[id][key];
                 }
             }
 
@@ -252,35 +273,36 @@ visual_manager.prototype.getSpriteById=function(id){
     return currentLayer;
 }
 
-//debug phase
-
-window.setTimeout(function() {
-    
-    visual_manager.setup ( [
-        {
-            "path":"layer1/1-1/1",
-            "image":["img/characters/","Actor1"],
-            x:0,y:0,
-            frame:[0,0,100,100],// this will be used to crop the image
-            scale:{x:1,y:1},
-            opacity:255,
-        }
-    ]);
-    SceneManager .push(visual_manager);
-    //window.setTimeout(function() {
-    //    SceneManager._scene.referesh();
-    //},50);
+//debug phase. Test code to demonstrate functionality
+if (true){
     window.setTimeout(function() {
-        s=SceneManager._scene;
-        s._state.push({
-                "path":"layer1/1-1/2",
+        //testing setup
+        visual_manager.setup ( [
+            {
+                "path":"layer1/1-1/1",
                 "image":["img/characters/","Actor1"],
-                x:0,y:100,
-                frame:[100,0,200,100],// this will be used to crop the image
+                x:0,y:0,
+                frame:[0,0,100,100],// this will be used to crop the image
                 scale:{x:1,y:1},
                 opacity:255,
-            })
-        s.refresh();
+            }
+        ]);
+        SceneManager .push(visual_manager);
+
+
+        //testing edit
+        window.setTimeout(function() {
+            s=SceneManager._scene;
+            s._state.push({
+                    "path":"layer1/1-1/2",
+                    "image":["img/characters/","Actor1"],
+                    x:0,y:100,
+                    frame:[100,0,200,100],// this will be used to crop the image
+                    scale:{x:1,y:1},
+                    opacity:255,
+                })
+            s.refresh();
+        }, 500);
+        //
     }, 500);
-    //
-}, 500);
+}

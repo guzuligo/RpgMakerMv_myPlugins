@@ -1,5 +1,5 @@
 /*
-version: 0.0.03c
+version: 0.0.03d
 About:
 This tool will create a scene and control the graphics based on a state variable that can be saved and restored.
 How this tool manages graphics:
@@ -19,8 +19,9 @@ How this tool manages graphics:
          },
          {}\\the next state object
         ]
-    User need to call saveState before changing the scene and restoreState after going back to a previous state.
+    Other properties can be added as needed. Such as "class" to specify different sprite classes.
 
+    User need to call saveState before changing the scene and restoreState after going back to a previous state.
 
     functions:
     edit(id,data): Lightweight edit function to update sprite properties based on data object. Returns updated state object.
@@ -118,6 +119,9 @@ visual_manager.prototype.edit=function(id,data){
                         if (this._state[id][key].x!=null) sprite.scale.x=this._state[id][key].x;
                         if (this._state[id][key].y!=null) sprite.scale.y=this._state[id][key].y;
                         break;
+                    case "class":
+                        //ignore class changes for now
+                        break;
                     default:
                         var value=this._state[id][key];
                         if (typeof value==="number" || typeof value==="string" || typeof value==="boolean"){
@@ -185,10 +189,11 @@ visual_manager.prototype._addSpriteToLayer=function(id){
     console.log("Adding sprite as layer:",this._state[id].path);
     var layerpath=this._state[id].path.split("/");
     var currentLayer=this;
-    for (i in layerpath){
+    var i,j;
+    for (i=0; i<layerpath.length; i++){
         //ensure layer exists
         if (currentLayer.childrenDict[layerpath[i]]==null){
-            var newLayer=new Sprite_Base();
+            var newLayer=(i==layerpath.length-1 && this._state[id]["class"]!=null)?new this._state[id]["class"]:new Sprite_Base();
             newLayer.name=layerpath[i];
             newLayer.childrenDict={};
             currentLayer.childrenDict[layerpath[i]]=newLayer;

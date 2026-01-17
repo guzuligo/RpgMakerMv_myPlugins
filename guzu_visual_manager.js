@@ -1,5 +1,5 @@
 /*
-version: 0.0.03e
+version: 0.0.03e.
 About:
 This tool will create a scene and control the graphics based on a state variable that can be saved and restored.
 How this tool manages graphics:

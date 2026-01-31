@@ -51,6 +51,7 @@ window.guzu=window.guzu||{};
 
     visual_manager.prototype = Object.create(Scene_Base.prototype);
     visual_manager.prototype.constructor = visual_manager;
+    visual_manager.prototype.om=null;// object manager reference
 
     visual_manager.setup=function(_state){
         visual_manager.tempState=_state;
@@ -63,12 +64,16 @@ window.guzu=window.guzu||{};
         this._state = visual_manager.tempState||[];
         this._save = null;
         this.childrenDict={};
+        this.om=new window.guzu.object_manager();
+        this.om.scene=this;
         visual_manager.tempState=null;
         console.log("init visual manager");
     }
 
     visual_manager.prototype.update = function() {
         
+        this.om.update();
+        Scene_Base.prototype.update.call(this); // Call the superclass's update method
     }
 
     visual_manager.prototype.destroy = function() {
@@ -132,9 +137,12 @@ window.guzu=window.guzu||{};
                                 sprite[key]=value;
                             }else{
                                 //iterate through object properties
-                                for (var subkey in value){
-                                    sprite[key][subkey]=value[subkey];
-                                }
+                                if (sprite[key])
+                                    for (var subkey in value){
+                                        sprite[key][subkey]=value[subkey];
+                                    }
+                                else
+                                    sprite[key]=typeof(value)=="array"?Object.assign([],value):Object.assign({},value);
                             }
                             //sprite[key]=this._state[id][key];
                     }
@@ -213,6 +221,15 @@ window.guzu=window.guzu||{};
     visual_manager.prototype.addSprite=function(id){
         //var layerpath=this._state[id].path.split("/");
         //add layer if it doesn't exist
+
+        //check if type of id is object. If it is, use the object.id as id and add it to _state
+        if (typeof id==="object"){
+            
+            this._state[id.id]=id;
+            id=id.id;
+        }
+
+
         currentLayer=this._addSpriteToLayer(id);
     
         

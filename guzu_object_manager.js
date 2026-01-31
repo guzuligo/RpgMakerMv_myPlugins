@@ -20,15 +20,20 @@ window.guzu=window.guzu||{};
     object_manager.prototype.scene=null;
     object_manager.prototype.initialize=function(){
         //this.scene=new window.guzu.visual_manager();
-        SceneManager.push(guzu.visual_manager);
-        this.scene=SceneManager._scene;
+        //   SceneManager.push(guzu.visual_manager);
+        //   this.scene=SceneManager._scene;
+        //add listeners to visual manager
+        //var om=this;
+        
     }
 
     object_manager.prototype.update=function(){
         //this.scene.update();
         for (var i=0;i<this.objects.length;i++){
             this.functions[this.objects[i].call].call(this.objects[i]);
+            
         }
+        //console.log("test")
     }
 
     object_manager.prototype.add=function(object){
